@@ -1,0 +1,4 @@
+# One app and one settings partition, no OTA. Edit flash.py's limits if you change this.
+# Name,   Type, SubType, Offset,   Size
+factory,  app,  factory, 0x10000,  0x500000
+nvs,      data, nvs,     0x510000, 0x10000
