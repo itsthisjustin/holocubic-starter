@@ -1,7 +1,8 @@
-// HoloCubic starter: the display, the backlight, the accelerometer and wifi, and nothing else.
-// The demo prints the tilt and wifi state and rolls a dot around the screen as you tip the cube.
+// HoloCubic starter: the display, the backlight, the accelerometer, the speaker and wifi, and nothing else.
+// The demo chimes at power-up, prints the tilt and wifi state, and rolls a dot around the screen as you tip the cube.
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
+#include <ESP_I2S.h>
 #include <WiFi.h>
 #include <Wire.h>
 #if __has_include("secrets.h")
@@ -12,7 +13,9 @@
 enum { W = 320, H = 240,
        LCD_MOSI = 15, LCD_SCK = 16, LCD_CS = 14, LCD_DC = 18, LCD_RST = 17,
        LCD_BL = 13,                     // backlight, active low
-       IMU_SDA = 4, IMU_SCL = 5, IMU_ADDR = 0x6B }; // QMI8658
+       IMU_SDA = 4, IMU_SCL = 5, IMU_ADDR = 0x6B,   // QMI8658
+       SPK_BCLK = 41, SPK_WS = 45, SPK_DOUT = 48,   // I2S amplifier and speaker
+       SPK_RATE = 16000 };
 // The panel is viewed in a mirror, so the picture is flipped top-bottom.
 // Bit 0x80 flips top-bottom, 0x40 left-right; 0x60 is plain landscape.
 static const uint8_t LCD_MADCTL = 0xE0;
@@ -51,12 +54,36 @@ static bool imuRead(int16_t v[3]) {
   return true;
 }
 
+static I2SClass speaker;
+
+static void speakerBegin() {
+  speaker.setPins(SPK_BCLK, SPK_WS, SPK_DOUT);
+  speaker.begin(I2S_MODE_STD, SPK_RATE, I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO);
+}
+
+// A sine tone; volume 0..32767. Blocks until it has been queued. For real audio, speaker.write() 16-bit mono PCM.
+static void beep(int hz, int ms, int volume = 5000) {
+  static int16_t buf[256];
+  int total = SPK_RATE * ms / 1000;
+  for (int i = 0; i < total;) {
+    int n = min(256, total - i);
+    for (int k = 0; k < n; k++, i++) {
+      int fade = min(min(i, total - i), 160); // 10ms ramps, so it doesn't click
+      buf[k] = volume * fade / 160 * sinf(i * 2 * PI * hz / SPK_RATE);
+    }
+    speaker.write((uint8_t *)buf, n * 2);
+  }
+}
+
 // ---- demo -------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
   displayBegin();
   backlight(255);
   imuBegin();
+  speakerBegin();
+  beep(660, 120);
+  beep(880, 180);
 #ifdef WIFI_SSID
   WiFi.begin(WIFI_SSID, WIFI_PASS);
 #endif

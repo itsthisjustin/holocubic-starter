@@ -1,8 +1,8 @@
 # HoloCubic starter
 
-A minimal custom firmware for the ClocTeck HoloCubic: the display, the backlight, the accelerometer and wifi, in one ~90-line Arduino sketch. Use it as the starting point for your own firmware.
+A minimal custom firmware for the ClocTeck HoloCubic: the display, the backlight, the accelerometer, the speaker and wifi, in one ~120-line Arduino sketch. Use it as the starting point for your own firmware.
 
-The demo prints the raw tilt and the wifi state and rolls a dot around the screen as you tip the cube.
+The demo chimes at power-up, prints the raw tilt and the wifi state and rolls a dot around the screen as you tip the cube.
 
 ## Read this before flashing
 
@@ -25,11 +25,12 @@ ESP32-S3R8 (8MB octal PSRAM), 8MB flash, USB-Serial-JTAG on the USB port.
 | LCD reset | 17 | active low |
 | LCD backlight | 13 | active low; PWM it for brightness |
 | Accelerometer SDA / SCL | 4 / 5 | QMI8658 at I2C address 0x6B |
+| Speaker bit clock / word select / data | 41 / 45 / 48 | I2S amplifier; 16-bit PCM |
 | Octal PSRAM | 33–37 | not available for anything else |
 
 The panel is write-only as wired: it never answers ID reads. It is viewed in a mirror, so the firmware flips the picture top-bottom (`LCD_MADCTL` in `src/main.cpp`).
 
-Not mapped yet: the front RGB light (GPIO8 has some effect on it), the microSD socket (the stock firmware used the SDMMC host), the speaker and microphone (I2S), and the button on the board. Pull requests welcome.
+Not mapped yet: the front RGB light (GPIO8 has some effect on it), the microSD socket (the stock firmware used the SDMMC host) and the button on the board. No microphone has been found. Pull requests welcome.
 
 ## Build and flash
 
