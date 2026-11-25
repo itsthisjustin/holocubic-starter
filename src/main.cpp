@@ -79,10 +79,11 @@ static void beep(int hz, int ms, int volume = 5000) {
 
 // ---- demo -------------------------------------------------------------------
 static volatile uint16_t lastKey;
+static volatile uint8_t lastMods;
 static volatile bool lastMedia, lastDown;
 
-static void onKey(uint16_t usage, bool media, bool down) { // Bluetooth task: just record it
-  lastKey = usage, lastMedia = media, lastDown = down;
+static void onKey(uint16_t usage, uint8_t mods, bool media, bool down) { // Bluetooth task: just record it
+  lastKey = usage, lastMods = mods, lastMedia = media, lastDown = down;
 }
 
 // -------------------------------------------------------------------
@@ -123,7 +124,7 @@ void loop() {
 
   gfx->setCursor(8, 56);
   gfx->printf("kbd %-10s", keyboardState());
-  if (lastKey) gfx->printf(" %s%02x %s ", lastMedia ? "m" : "", lastKey, lastDown ? "dn" : "up");
+  if (lastKey || lastMods) gfx->printf(" %s%02x+%02x %s ", lastMedia ? "m" : "", lastMods, lastKey, lastDown ? "dn" : "up");
 
   gfx->fillCircle(dotX, dotY, 8, RGB565_BLACK);
   dotX = constrain(W / 2 + (a[0] - rest[0]) * (W / 2) / 3000, 8, W - 9); // full travel at about 20 degrees
@@ -131,7 +132,7 @@ void loop() {
   gfx->fillCircle(dotX, dotY, 8, ok ? RGB565_ORANGE : RGB565_RED);
 
   static uint32_t last;
-  if (millis() - last > 1000) { last = millis(); Serial.printf("accel %d %d %d imu=%d wifi=%d kbd=%s\n", a[0], a[1], a[2], ok, (int)WiFi.status(), keyboardState()); }
+  if (millis() - last > 1000) { last = millis(); Serial.printf("accel %d %d %d imu=%d wifi=%d kbd=%s %s\n", a[0], a[1], a[2], ok, (int)WiFi.status(), keyboardState(), keyboardError()); }
   if (Serial.available() && Serial.readStringUntil('\n').startsWith("forget")) keyboardForget();
   delay(30);
 }

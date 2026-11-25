@@ -53,12 +53,13 @@ For wifi, copy `src/secrets.example.h` to `src/secrets.h` and fill in a 2.4GHz n
 
 ## Bluetooth keyboard
 
-`src/keyboard.cpp` connects to a Bluetooth LE keyboard, macro pad or dial (HID over GATT) and calls your function with each key's USB HID usage code, pressed and released. Put the keyboard in pairing mode and the cube pairs with the first one it finds; after that it reconnects only to that one. Type `forget` in the serial monitor (`pio device monitor`) to unpair it.
+`src/keyboard.cpp` connects to a Bluetooth LE keyboard, macro pad or dial (HID over GATT) and calls your function with each key's USB HID usage code and the modifiers held with it, pressed and released. Put the keyboard in pairing mode and the cube pairs with the first one it finds; after that it reconnects only to that one. Type `forget` in the serial monitor (`pio device monitor`) to unpair it.
 
 - Bluetooth LE only: the ESP32-S3 has no classic Bluetooth, so a classic-only keyboard won't be found.
 - Pairing uses "just works" (no passkey).
-- It recognises standard keyboard reports and media keys (volume, play/pause) by their length instead of parsing the HID report map, so unusual devices may need a tweak in `onReport()`.
-- Not tested with a keyboard yet.
+- It recognises keyboard reports (7 or 8 bytes) and media keys (volume, play/pause) by their length instead of parsing the HID report map, so unusual devices may need a tweak in `onReport()`.
+- If it won't connect, the serial line shows why after `kbd=` (the step that failed and the NimBLE error code). Error 574 usually means the keyboard is still paired to another computer: unpair it there and put it back in pairing mode.
+- Tested with an XPPen ACK05 (it calls itself "Shortcut Remote"). Without XPPen's driver its keys send shortcuts: key 2 is space, key 3 ctrl+z, key 4 ctrl+s, keys 5-7 a lone alt, ctrl and shift. Its dial sends ctrl + keypad +/- and pressing the dial sends nothing (the remote uses it to switch dial modes).
 
 ## Flash layout
 
