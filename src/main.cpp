@@ -1,10 +1,12 @@
-// HoloCubic starter: the display, the backlight, the accelerometer, the speaker and wifi, and nothing else.
-// The demo chimes at power-up, prints the tilt and wifi state, and rolls a dot around the screen as you tip the cube.
+// HoloCubic starter: the display, the backlight, the accelerometer, the speaker, wifi and a Bluetooth keyboard.
+// The demo chimes at power-up, shows the tilt, wifi and keyboard state, and rolls a dot around as you tip the cube.
+// Type "forget" in the serial monitor to unpair the keyboard.
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 #include <ESP_I2S.h>
 #include <WiFi.h>
 #include <Wire.h>
+#include "keyboard.h"
 #if __has_include("secrets.h")
 #include "secrets.h"
 #endif
@@ -76,12 +78,21 @@ static void beep(int hz, int ms, int volume = 5000) {
 }
 
 // ---- demo -------------------------------------------------------------------
+static volatile uint16_t lastKey;
+static volatile bool lastMedia, lastDown;
+
+static void onKey(uint16_t usage, bool media, bool down) { // Bluetooth task: just record it
+  lastKey = usage, lastMedia = media, lastDown = down;
+}
+
+// -------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
   displayBegin();
   backlight(255);
   imuBegin();
   speakerBegin();
+  keyboardBegin(onKey);
   beep(660, 120);
   beep(880, 180);
 #ifdef WIFI_SSID
@@ -110,12 +121,17 @@ void loop() {
   gfx->print("wifi: add src/secrets.h");
 #endif
 
+  gfx->setCursor(8, 56);
+  gfx->printf("kbd %-10s", keyboardState());
+  if (lastKey) gfx->printf(" %s%02x %s ", lastMedia ? "m" : "", lastKey, lastDown ? "dn" : "up");
+
   gfx->fillCircle(dotX, dotY, 8, RGB565_BLACK);
   dotX = constrain(W / 2 + (a[0] - rest[0]) * (W / 2) / 3000, 8, W - 9); // full travel at about 20 degrees
-  dotY = constrain(H / 2 + 30 + (a[1] - rest[1]) * (H / 2) / 3000, 64, H - 9);
+  dotY = constrain(H / 2 + 40 + (a[1] - rest[1]) * (H / 2) / 3000, 88, H - 9);
   gfx->fillCircle(dotX, dotY, 8, ok ? RGB565_ORANGE : RGB565_RED);
 
   static uint32_t last;
-  if (millis() - last > 1000) { last = millis(); Serial.printf("accel %d %d %d imu=%d wifi=%d\n", a[0], a[1], a[2], ok, (int)WiFi.status()); }
+  if (millis() - last > 1000) { last = millis(); Serial.printf("accel %d %d %d imu=%d wifi=%d kbd=%s\n", a[0], a[1], a[2], ok, (int)WiFi.status(), keyboardState()); }
+  if (Serial.available() && Serial.readStringUntil('\n').startsWith("forget")) keyboardForget();
   delay(30);
 }

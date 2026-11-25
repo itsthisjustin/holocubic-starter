@@ -1,8 +1,8 @@
 # HoloCubic starter
 
-A minimal custom firmware for the ClocTeck HoloCubic: the display, the backlight, the accelerometer, the speaker and wifi, in one ~120-line Arduino sketch. Use it as the starting point for your own firmware.
+A minimal custom firmware for the ClocTeck HoloCubic: the display, the backlight, the accelerometer, the speaker, wifi and a Bluetooth keyboard, in a ~140-line Arduino sketch plus a small keyboard module. Use it as the starting point for your own firmware.
 
-The demo chimes at power-up, prints the raw tilt and the wifi state and rolls a dot around the screen as you tip the cube.
+The demo chimes at power-up, prints the raw tilt, wifi and keyboard state and the last key pressed, and rolls a dot around the screen as you tip the cube.
 
 ## Read this before flashing
 
@@ -50,6 +50,15 @@ The first time, wipe the settings partition as well, since that part of the flas
 `flash.py` picks the cube's USB port by itself when it is the only ESP32 plugged in (otherwise pass `--port`), and refuses any chip that doesn't have flash encryption on.
 
 For wifi, copy `src/secrets.example.h` to `src/secrets.h` and fill in a 2.4GHz network.
+
+## Bluetooth keyboard
+
+`src/keyboard.cpp` connects to a Bluetooth LE keyboard, macro pad or dial (HID over GATT) and calls your function with each key's USB HID usage code, pressed and released. Put the keyboard in pairing mode and the cube pairs with the first one it finds; after that it reconnects only to that one. Type `forget` in the serial monitor (`pio device monitor`) to unpair it.
+
+- Bluetooth LE only: the ESP32-S3 has no classic Bluetooth, so a classic-only keyboard won't be found.
+- Pairing uses "just works" (no passkey).
+- It recognises standard keyboard reports and media keys (volume, play/pause) by their length instead of parsing the HID report map, so unusual devices may need a tweak in `onReport()`.
+- Not tested with a keyboard yet.
 
 ## Flash layout
 
